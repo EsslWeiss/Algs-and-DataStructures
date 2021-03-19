@@ -21,7 +21,7 @@ class ArrayStack(Stack):
         self._stk_size += 1
 
     def pop(self):
-        if self.isEmpty():
+        if self.is_empty():
             raise Exception("Stack was empty!")
         
         self._stk_size -= 1

@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 
-class Stack:
+class Stack(ABC):
 
     @abstractmethod
     def push(self):
@@ -19,10 +19,6 @@ class Stack:
         pass
 
     @abstractmethod
-    def isEmpty(self):
-        pass
-    
-    @abstractmethod
-    def clear_stk(self):
+    def is_empty(self):
         pass
 
