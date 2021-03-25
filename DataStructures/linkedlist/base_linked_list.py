@@ -68,8 +68,12 @@ class LinkedList:
         prev_node = None
         while curr_node or prev_node:
             if curr_node.data == data_key:
-                prev_node.next = curr_node.next
-                del curr_node
+                if prev_node:
+                    prev_node.next = curr_node.next
+                    del curr_node
+                else:
+                    self.head = self.head.next
+
                 self.ll_size -= 1
                 break
             
@@ -78,9 +82,9 @@ class LinkedList:
         
         return True
 
-    def get_nodes(self):
+    def nodes(self):
         if not self.head:
-            return False
+            return []
 
         curr_node = self.head
         nodes_store = []
@@ -102,6 +106,12 @@ class LinkedList:
             curr_node = curr_node.next
 
         return False
+    
+    def size(self):
+        return self.ll_size
+
+    def is_empty(self):
+        return self.size() == 0
 
 
 if __name__ == "__main__":
@@ -119,13 +129,24 @@ if __name__ == "__main__":
     nd = ll.get_node(data_key="SUB_CHILD #3")
     ll.in_between_insert(data="SUPER NODE #99", exist_node=nd)
     
-    print(ll.get_nodes())
-    print(ll.ll_size)
+    print(ll.nodes())
+    print(ll.size(), '\n')
 
     ll.remove_node("SUB_CHILD #2")
     ll.remove_node("LAST_CHILD #12")
     ll.remove_node("LAST_CHILD #11")
+    ll.remove_node("SUB_CHILD #3")
+    ll.remove_node("SUB_CHILD #1")
 
-    print(ll.get_nodes())
-    print(ll.ll_size)
+    print(ll.nodes())
+    print(ll.size())
+    print(ll.is_empty(), '\n')
+
+    ll.remove_node("SUPER NODE #99")
+    ll.remove_node("#ROOT")
+    ll.remove_node("LAST_CHILD #10")
+
+    print(ll.nodes())
+    print(ll.size())
+    print(ll.is_empty(), '\n')
 
