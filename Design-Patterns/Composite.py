@@ -7,7 +7,8 @@ class Package(Component):
         Package class contains complex components that
         can be nested components.
     """
-    def __init__(self, *args):
+    def __init__(self, id, *args):
+        self.id = id
         self._parent = None
         self.childs = []
         for comp in args:
@@ -59,47 +60,88 @@ class Package(Component):
             comp.parent = self
             self.childs.append(comp)
 
-    def remove(self, comp):
+    def remove_by_id(self, id):
         """
-            remove component from the Package object
+            remove component from the Package by id
         """
-        try:
-            self.childs.remove(comp)
-        except ValueError:
-            raise ValueErorr("%s not %s value" % (
-                    self.__class__,
-                    comp
-                ))
-        else:
-            comp.parent = None
-        return True       
+        for comp in self.childs:
+            if comp.id == id:
+                self.childs.remove(comp)
+
+            if comp.is_composite():
+                self.__class__.remove_by_id(comp, id)
+    
+    def remove_by(self, field, value):
+        """
+            remove component from the Package by parametrize field
+        """
+        for comp in self.childs:
+            if str(field) in comp.__dict__ and \
+                    getattr(comp, str(field)) == value:
+                self.childs.remove(comp)
+                return
+
+            if comp.is_composite():
+                self.__class__.remove_by(comp, field, value)
 
     def operation(self):
         return [comp.operation() for comp in self.child]
     
-    def pack_repr(self):
+    def get_by_id(self, id):
+        """
+            Get component in package by id
+        """
+        component = None
+        for comp in self.childs:
+            if comp.id == id:
+                return comp
+
+            if comp.is_composite():
+                component = self.__class__.get_by_id(comp, id)
+                if component:
+                    break
+
+        return component
+    
+    def get_by(self, field, value):
+        component = None
+        for comp in self.childs:
+            if str(field) in comp.__dict__ \
+                    and getattr(comp, str(field)) == value:
+                return comp
+
+            if comp.is_composite():
+                component = self.__class__.get_by(comp, field, value)
+                if component:
+                    break
+
+        return component
+
+    def products_repr(self):
         """
             Pack representation
         """
-        pack_repr = []
+        prod_repr = []
         for comp in self.childs:
             if comp.is_composite():
-                pack_repr += self.__class__.pack_repr(comp)
+                prod_repr += self.__class__.products_repr(comp)
             else:
-                pack_repr.append({
-                    "parent": comp.parent,
+                prod_repr.append({
+                    "id": comp.id,
+                    "parent_id": comp.parent.id,
                     "title": comp.title,
                     "price": comp.price,
                     "country": comp.title,
                     "ordered": comp.ordered
                 })
 
-        return pack_repr    
-    
+        return prod_repr    
+ 
     def __repr__(self):
-        return "<slf.parent=%s, slf.childs=%s, " \
+        return "<slf.id=%s, slf.parent_id=%s, slf.childs=%s, " \
                 "slf.package_price=%s>" % (
-                self.parent,
+                self.id,
+                self.parent.id,
                 True if len(self.childs) > 0 else False,
                 self.package_price
             )
@@ -109,7 +151,8 @@ class Product(Component):
         Product class represent final object of the structure.
         Product cannot have nested components.
     """
-    def __init__(self, title, country, price):
+    def __init__(self, id, title, country, price):
+        self.id = id
         self._parent = None
         self.title = title
         self.country = country
@@ -131,10 +174,11 @@ class Product(Component):
             )
 
     def __repr__(self):
-        return "<slf.parent=%s, slf.title=%s, " \
-            "slf.price=%s, slf.country=%s>, " \
-            "slf.ordered=%s" % (
-                self.parent,
+        return "<slf.id=%s, slf.parent_id=%s, " \
+            "slf.title=%s, slf.price=%s, " \
+            "slf.country=%s>, slf.ordered=%s" % (
+                self.id,
+                self.parent.id,
                 self.title,
                 self.price,
                 self.country,
@@ -142,22 +186,52 @@ class Product(Component):
             )
 
 
-if __name__ == "__main__":
-    prod1 = Product(title="MacBook 2016", country="Bangladesh", price=1200.10)
-    prod2 = Product(title="Iphone S6", country="China", price=2000.80)
-    prod3 = Product(title="Sumsung Note 10", country="Japan", price=1200.99)
-    prod4 = Product(title="Xiaomi R9", country="China", price=999.10)
+def configurate_composite():
+    main_pack = Package(id=100)
+    sub_pack_1 = Package(id=20)
+    sub_pack_3 = Package(id=10)
 
-    main_pack = Package()
-    sub_pack_a = Package()
-    sub_pack1 = Package(prod1, prod3)
-    sub_pack2 = Package(prod2, prod4)
-    sub_pack_a.add(sub_pack2)
-
-    main_pack.add_many(sub_pack1, sub_pack2)
+    prod1 = Product(
+            id=1, 
+            title="MacBook 2016", 
+            country="Bangladesh", 
+            price=1200.10)
+    prod2 = Product(
+            id=2, 
+            title="Iphone S6", 
+            country="China", 
+            price=2000)
+    prod3 = Product(
+            id=3, 
+            title="Sumsung Note 10", 
+            country="Japan", 
+            price=1200)
+    prod4 = Product(
+            id=4, 
+            title="Xiaomi R9", 
+            country="China", 
+            price=999)
     
-    main_pack.calc_package_price()
+    sub_pack_2 = Package(56, prod1, prod2)
+    sub_pack_1.add_many(prod3, prod4)
+    sub_pack_3.add(sub_pack_2).add(sub_pack_1)
 
-    print(main_pack.package_price, "\n")
-    print(main_pack.pack_repr())
+    main_pack.add(sub_pack_3)
+    main_pack.calc_package_price()
+    return main_pack
+
+
+if __name__ == "__main__":
+    package = configurate_composite()
+
+    print(package.package_price, "\n")
+    print(package.products_repr(), "\n")
+    
+    local_package = package.get_by_id(56)
+    package.remove_by_id(local_package.id)
+
+    print(package.products_repr(), "\n")
+    
+    product = package.get_by(field="country", value="China")
+    print(product, "\n")
 
